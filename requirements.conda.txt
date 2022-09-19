@@ -1,5 +1,6 @@
 astropy==5.1
-bottleneck==1.3.5
-jupyterlab==3.4.7
+bottleneck
+fastapi[all]
+jupyterlab
 pre-commit==2.20.0
-voila==0.3.6
+voila
