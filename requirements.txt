@@ -1,6 +1,7 @@
 astropy==5.1
 bottleneck
 fastapi[all]
+jdaviz==2.10.0
 jupyterlab
 peewee
 pre-commit==2.20.0
