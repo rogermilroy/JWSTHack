@@ -3,11 +3,11 @@ from typing import List, Dict, Any
 from astropy.table import Row
 from astroquery.mast import Observations
 from numpy.ma.core import MaskedConstant
-
-from app.models.database import db
-from app.models import observations
-from app import schemas
 from pydantic import parse_obj_as
+
+from app import schemas
+from app.models import observations
+from app.models.database import db
 
 mission = "JWST"
 calib_levels = [2, 3]  # equivalent to 2 = calibrated, 3 = science product
@@ -53,13 +53,12 @@ def get_observations(levels, instrument_name, filters) -> List[Dict]:
     return list(map(row_adaptor, observations))
 
 
-# from the rows we can zip keys and values to get stuff to put into the db.
-
-
-def get_images(obs_list):
+def get_images(observs: List[observations.MastObservation]) -> List[Dict]:
     # get the product list
-    prod_list = Observations.get_product_list(obs_list)
-    return prod_list
+    obsid_list = [obs.obsid for obs in observs]
+    # TODO create a Table from the list of MastObservations
+    prod_list = list(Observations.get_product_list(obsid_list))
+    return list(map(row_adaptor, prod_list))
 
 
 if __name__ == "__main__":
@@ -77,8 +76,16 @@ if __name__ == "__main__":
             "F444W",
         ],
     )
-    print(obs)
+
+    # needs to check for existing observations in DB.
+    # get existing observations in DB - read into set of obsid
     db.connect()
+    already_synced_obs = observations.MastObservation.select()
+    synced_ids = {synced_obs.obsid for synced_obs in already_synced_obs}
+
+    # filter list to only include new obsid
+    obs = list(filter(lambda x: x["obsid"] not in synced_ids, obs))
+
     with db.atomic():
         for idx in range(0, len(obs), 100):
             validated: List[schemas.MastObservationBase] = parse_obj_as(
@@ -88,8 +95,39 @@ if __name__ == "__main__":
                 list(validated_obj.dict().values()) for validated_obj in validated
             ]
             observations.MastObservation.insert_many(values).execute()
-    db.close()
 
-    for ob in obs:
-        prods = get_images(obs_list=ob)
-        print(prods)
+    # Needs to be over new items in DB, not just the returned Observations
+    # get unique obsid in DataProduct
+
+    # unique_observation_products = observations.DataProduct.select().group_by(observations.DataProduct.observation)
+    # unique_obsIDs = {prod.obsID for prod in unique_observation_products}
+
+    # get MastObservation with obsid != those from DataProduct
+    new_observations = observations.MastObservation.select().where(
+        observations.MastObservation.id.not_in(
+            observations.DataProduct.select().group_by(
+                observations.DataProduct.observation
+            )
+        )
+    )
+    for observ in new_observations:
+        print(observ)
+
+    # iterate over MastObservations.
+    prods: List[Dict] = get_images(observs=new_observations)
+    validated_prods = parse_obj_as(list[schemas.DataProductBase], prods)
+    prods_values = [
+        list(validated_prod.dict().values()).append(
+            observations.MastObservation.get(
+                observations.MastObservation.obs_id == validated_prod.obs_id
+            )
+        )
+        for validated_prod in validated_prods
+    ]
+    print(len(prods_values))
+    with db.atomic():
+        for idx in range(0, len(obs), 100):
+            observations.DataProduct.insert_many(
+                prods_values[idx : idx + 100]
+            ).execute()
+    db.close()

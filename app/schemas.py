@@ -2,7 +2,6 @@ from typing import Any, List
 
 import peewee
 from pydantic import BaseModel
-
 from pydantic.utils import GetterDict
 
 
@@ -25,13 +24,16 @@ class User(BaseModel):
         getter_dict = PeeweeGetterDict
 
 
-class DataProduct(BaseModel):
-    id: int
+class DataProductBase(BaseModel):
     obsID: str
     obs_id: str
     description: str
     type: str
     dataURI: str
+
+
+class DataProduct(DataProductBase):
+    id: int
     observation_id: int
 
     class Config:
@@ -65,13 +67,13 @@ class MastObservationBase(BaseModel):
     sequence_number: int | None
     provenance_name: str
     s_region: str
-    jpegURL: str
+    jpegURL: str | None
     dataURL: str
     dataRights: str
     mtFlag: bool
     srcDen: float | None
     intentType: str
-    obsid: str
+    obsid: int
     objID: str
 
 

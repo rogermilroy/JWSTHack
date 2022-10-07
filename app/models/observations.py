@@ -6,6 +6,7 @@ from peewee import (
     ForeignKeyField,
     BooleanField,
 )
+
 from .database import db
 
 
@@ -35,7 +36,7 @@ class MastObservation(Model):
     sequence_number = IntegerField(null=True)
     provenance_name = CharField()
     s_region = CharField()
-    jpegURL = CharField()
+    jpegURL = CharField(null=True)
     dataURL = CharField()
     dataRights = CharField()
     mtFlag = BooleanField()
