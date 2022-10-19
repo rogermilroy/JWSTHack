@@ -1,8 +1,11 @@
-astropy==5.1
 bottleneck
-fastapi[all]
+fastapi[all]~=0.85.0
 jdaviz==2.10.0
 jupyterlab
-peewee
+numpy~=1.23.3
+peewee~=3.15.1
+pillow~=9.2.0
 pre-commit==2.20.0
+pydantic~=1.10.2
+requests~=2.28.1
 voila

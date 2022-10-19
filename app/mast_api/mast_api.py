@@ -28,7 +28,9 @@ Result Dataset Formats
 """
 
 
-class JWSTService(Enum):
+class MASTService(Enum):
+    FILTERED = "Mast.Caom.Filtered"
+    PRODUCTS = "Mast.Caom.Products"
     NIRCAM = "Mast.Jwst.Filtered.Nircam"
     NIRISS = "Mast.Jwst.Filtered.Niriss"
     NIRSPEC = "Mast.Jwst.Filtered.Nirspec"
@@ -63,16 +65,16 @@ def mast_api_request(request_dict):
     return res
 
 
-def get_jwst_request(
-    service: JWSTService,
+def get_mast_request(
+    service: MASTService,
     filters: List[Dict] = None,
     filename: str = None,
     page: int = 1,
     page_size: int = 1000,
     timeout: int = 20,
 ) -> Dict:
-    jwst_request = {
-        "service": service,
+    mast_request = {
+        "service": service.value,
         "params": {
             "columns": "*",  # this means all columns
             "filters": filters if filters is not None else list(),
@@ -83,11 +85,11 @@ def get_jwst_request(
         "timeout": timeout,
     }
     if filename is not None:
-        jwst_request["filename"] = filename
-    return jwst_request
+        mast_request["filename"] = filename
+    return mast_request
 
 
-def get_jwst_filter_params(
+def get_filter_params(
     column: str, values: List = None, separator: str = None, search_text: str = None
 ) -> Dict:
     """
@@ -111,6 +113,10 @@ def get_jwst_filter_params(
 
 
 if __name__ == "__main__":
-    request = get_jwst_request(service=JWSTService.NIRCAM, page_size=10)
-    nircam_data = mast_api_request(request_dict=request)
-    print(nircam_data.json())
+    jwst_filter = get_filter_params(column="obs_collection", values=["JWST"])
+    products_request = get_mast_request(
+        service=MASTService.FILTERED,
+        filters=[jwst_filter],
+    )
+    products_data = mast_api_request(request_dict=products_request)
+    print(products_data.json())

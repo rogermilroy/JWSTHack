@@ -14,7 +14,7 @@ class MastObservation(Model):
     dataproduct_type = CharField()
     calib_level = IntegerField()
     obs_collection = CharField()
-    obs_id = CharField()
+    obs_id = CharField(unique=True)
     target_name = CharField()
     s_ra = FloatField()
     s_dec = FloatField()
